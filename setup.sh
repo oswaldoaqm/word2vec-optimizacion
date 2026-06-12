@@ -1,34 +1,61 @@
 #!/usr/bin/env bash
 # ============================================================
-#  setup.sh  —  Configura el entorno del proyecto Word2Vec
-#  Ejecutar con:  bash setup.sh
+#  setup.sh - Configura el entorno del proyecto Word2Vec
+#  Uso: bash setup.sh
 # ============================================================
 
 set -e
 
-echo "[1/4] Creando entorno virtual..."
+echo "[1/5] Creando entorno virtual..."
 python -m venv venv
 
-echo "[2/4] Activando entorno..."
-source venv/Scripts/activate   # Git Bash en Windows
-# source venv/bin/activate     # Linux / macOS — descomentar si aplica
+echo "[2/5] Activando entorno..."
+# Detectar sistema operativo
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+    source venv/Scripts/activate   # Git Bash en Windows
+else
+    source venv/bin/activate       # Linux / macOS
+fi
 
-echo "[3/4] Instalando dependencias..."
+echo "[3/5] Actualizando pip..."
 pip install --upgrade pip
 
-# PyTorch con soporte CUDA 12.1 (RTX 4070)
-pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
-
-# Resto de dependencias
+echo "[4/5] Instalando dependencias base..."
 pip install datasets gensim scikit-learn matplotlib seaborn numpy pandas tqdm optuna
 
-echo "[4/4] Verificando instalación..."
+echo "[5/5] Instalando PyTorch..."
+echo ""
+echo "Selecciona tu hardware:"
+echo "  1. GPU NVIDIA con CUDA 12.1 (RTX 30xx / 40xx)"
+echo "  2. GPU NVIDIA con CUDA 11.8 (RTX 20xx / 30xx)"
+echo "  3. Solo CPU (sin GPU)"
+echo ""
+read -p "Ingresa 1, 2 o 3: " opcion
+
+if [ "$opcion" = "1" ]; then
+    pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+elif [ "$opcion" = "2" ]; then
+    pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
+else
+    pip install torch torchvision
+fi
+
+echo ""
+echo "Verificando instalacion..."
 python -c "
 import torch, datasets, gensim, sklearn, matplotlib
-print(f'  torch     : {torch.__version__}')
-print(f'  CUDA OK   : {torch.cuda.is_available()}')
-print(f'  datasets  : {datasets.__version__}')
-print(f'  gensim    : {gensim.__version__}')
-print(f'  sklearn   : {sklearn.__version__}')
+print('  torch    :', torch.__version__)
+print('  CUDA OK  :', torch.cuda.is_available())
+print('  datasets :', datasets.__version__)
+print('  gensim   :', gensim.__version__)
+print('  sklearn  :', sklearn.__version__)
 print('Todo listo.')
 "
+
+echo ""
+echo "Para activar el entorno en el futuro:"
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+    echo "  source venv/Scripts/activate"
+else
+    echo "  source venv/bin/activate"
+fi
