@@ -41,4 +41,8 @@ echo.
 echo Listo. Para activar el entorno en el futuro:
 echo   call venv\Scripts\activate.bat   (CMD)
 echo   source venv/Scripts/activate     (Git Bash)
+echo.
+echo Nota: exp6.py requiere los embeddings SBWC (descarga manual, ~1GB):
+echo   mkdir embeddings
+echo   curl -L -o embeddings\SBW-vectors-300-min5.bin.gz http://cs.famaf.unc.edu.ar/~ccardellino/SBWCE/SBW-vectors-300-min5.bin.gz
 pause

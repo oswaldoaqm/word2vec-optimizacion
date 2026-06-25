@@ -59,3 +59,9 @@ if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
 else
     echo "  source venv/bin/activate"
 fi
+
+echo ""
+echo "Nota: exp6.py requiere los embeddings SBWC (descarga manual, ~1GB):"
+echo "  mkdir -p embeddings"
+echo "  curl -L -o embeddings/SBW-vectors-300-min5.bin.gz \\"
+echo "    http://cs.famaf.unc.edu.ar/~ccardellino/SBWCE/SBW-vectors-300-min5.bin.gz"

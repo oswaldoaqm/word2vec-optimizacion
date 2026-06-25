@@ -7,6 +7,7 @@ from pathlib import Path
 from src.data import load_amazon_spanish, preprocess_corpus
 from src.word2vec_model import Vocabulary, Word2Vec1Layer
 from src.trainer import train_word2vec_with_grad
+from src.utils import set_seed
 
 RESULTS_DIR = Path("results")
 RESULTS_DIR.mkdir(exist_ok=True)
@@ -57,6 +58,7 @@ def plot_grad_tracking(sgd_res, adam_res, epochs):
 
 
 def main():
+    set_seed(42)
     print("Cargando datos...")
     (train_texts, train_labels, _, _,
      test_texts, test_labels) = load_amazon_spanish(max_train=MAX_TRAIN)

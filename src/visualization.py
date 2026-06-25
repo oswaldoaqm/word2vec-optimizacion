@@ -171,14 +171,16 @@ def print_results_table(all_results: list[dict]):
         { "arquitectura", "optimizador", "accuracy", "f1_macro",
           "tiempo_total" }
     """
-    header = f"{'Arquitectura':<18} {'Optimizador':<12} {'Accuracy':>9} {'F1-macro':>9} {'Tiempo(s)':>10}"
+    header = f"{'Arquitectura':<18} {'Optimizador':<12} {'lr':>8} {'Accuracy':>9} {'F1-macro':>9} {'Tiempo(s)':>10}"
     print("\n" + "═" * len(header))
     print(header)
     print("─" * len(header))
     for r in all_results:
+        lr_str = f"{r['lr']:g}" if r.get("lr") is not None else "—"
         print(
             f"{r['arquitectura']:<18} "
             f"{r['optimizador']:<12} "
+            f"{lr_str:>8} "
             f"{r['accuracy']:>9.4f} "
             f"{r['f1_macro']:>9.4f} "
             f"{r['tiempo_total']:>10.1f}"

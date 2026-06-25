@@ -1,6 +1,32 @@
+# ── Entorno virtual (pesado, no se versiona) ───────────────
 venv/
-*.__pycache__/
+
+# ── Cache de Python ────────────────────────────────────────
+__pycache__/
 *.pyc
 *.pyo
+
+# ── Resultados pesados / regenerables ──────────────────────
+# Los .pkl se regeneran al correr los experimentos; las figuras (.png)
+# y los números del informe sí quedan versionados.
 *.pkl
+
+# ── Embeddings preentrenados (descarga manual, ~1GB) ───────
+# Ver instrucciones de descarga en el README (exp6 / SBWC).
+embeddings/
+
+# ── Cache de datasets descargados (regenerable) ────────────
+data/
+
+# ── Archivos auxiliares de LaTeX ───────────────────────────
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+
+# ── Otros ──────────────────────────────────────────────────
 .env
+.DS_Store

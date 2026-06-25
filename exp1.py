@@ -9,14 +9,16 @@ from src.data import load_amazon_spanish, preprocess_corpus
 from src.word2vec_model import Vocabulary, Word2Vec1Layer
 from src.trainer import train_word2vec
 from src.classifier import build_document_matrix, train_classifier, evaluate
+from src.utils import set_seed
 
 RESULTS_DIR = Path("results")
 RESULTS_DIR.mkdir(exist_ok=True)
 
 LR_COLORS = {0.1: "#E24B4A", 0.01: "#F5A623", 0.001: "#9B59B6", 0.0001: "#95A5A6"}
-LR_LABELS = {0.1: "SGD lr=0.1", 0.01: "SGD lr=0.01", 0.001: "SGD lr=0.001 (original)", 0.0001: "SGD lr=0.0001"}
+LR_LABELS = {0.1: "SGD lr=0.1", 0.01: "SGD lr=0.01", 0.001: "SGD lr=0.001", 0.0001: "SGD lr=0.0001"}
 
 def main():
+    set_seed(42)
     parser = argparse.ArgumentParser()
     parser.add_argument("--epochs",    type=int,   default=7)
     parser.add_argument("--max_train", type=int,   default=40000)

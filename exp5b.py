@@ -1,8 +1,11 @@
 # exp5b.py
 # Busqueda Bayesiana de hiperparametros con Optuna (TPE).
 # Busca en espacio CONTINUO:
-#   lr  in [0.001, 0.2]   (log-uniform)
-#   d   in [50, 200]       (entero)
+#   lr  in [1e-4, 0.05]   (log-uniform)  <- limite inferior por DEBAJO del
+#                                           optimo (~1e-3) para no anclar el
+#                                           resultado a la frontera del espacio
+#   d   in [50, 256]       (entero)       <- limite superior por ENCIMA del
+#                                           optimo (~150-200) por la misma razon
 # Criterio: F1-macro en VALIDACION (test bloqueado).
 # Despues de n_trials, el ganador se evalua en TEST una sola vez.
 
@@ -18,6 +21,7 @@ from src.data import load_amazon_spanish, preprocess_corpus
 from src.word2vec_model import Vocabulary, Word2Vec1Layer
 from src.trainer import train_word2vec
 from src.classifier import build_document_matrix, train_classifier, evaluate
+from src.utils import set_seed
 
 RESULTS_DIR = Path("results")
 RESULTS_DIR.mkdir(exist_ok=True)
@@ -26,7 +30,8 @@ MAX_TRAIN = 40000
 EPOCHS    = 5
 BATCH     = 512
 DEVICE    = "cuda"
-N_TRIALS  = 20
+N_TRIALS  = 30          # mas trials => la fase realmente "bayesiana" del TPE
+                        # (tras el arranque aleatorio) tiene mas peso
 
 # Variables globales para datos (cargados una sola vez)
 TRAIN_TOKENS = None
@@ -43,8 +48,8 @@ def objective(trial):
     Optuna aprende de los resultados anteriores para
     proponer mejores combinaciones (TPE Bayesiano).
     """
-    lr = trial.suggest_float("lr", 0.001, 0.2, log=True)
-    d  = trial.suggest_int("d", 50, 200)
+    lr = trial.suggest_float("lr", 1e-4, 0.05, log=True)
+    d  = trial.suggest_int("d", 50, 256)
 
     print(f"\n  Trial {trial.number+1}/{N_TRIALS}  lr={lr:.5f}  d={d}")
 
@@ -150,6 +155,7 @@ def plot_optimization_history(study):
 def main():
     global TRAIN_TOKENS, TRAIN_LABELS, VAL_TOKENS, VAL_LABELS, VOCAB
 
+    set_seed(42)
     print("Cargando datos...")
     (train_texts, train_labels,
      val_texts,   val_labels,
@@ -166,8 +172,8 @@ def main():
     optuna.logging.set_verbosity(optuna.logging.WARNING)
 
     print(f"\nIniciando busqueda Bayesiana: {N_TRIALS} trials")
-    print("  lr  in [0.001, 0.2]  (log-uniform, continuo)")
-    print("  d   in [50, 200]     (entero)")
+    print("  lr  in [1e-4, 0.05]  (log-uniform, continuo)")
+    print("  d   in [50, 256]     (entero)")
     print("  Optimizador fijo: Adam")
     print("  Criterio: F1-macro en VALIDACION")
     print("  TEST BLOQUEADO hasta seleccion final\n")
@@ -175,7 +181,7 @@ def main():
 
     study = optuna.create_study(
         direction="maximize",
-        sampler=optuna.samplers.TPESampler(seed=42),
+        sampler=optuna.samplers.TPESampler(seed=42, n_startup_trials=8),
     )
     # n_jobs=1 obligatorio para evitar problemas en Windows
     study.optimize(objective, n_trials=N_TRIALS, n_jobs=1)

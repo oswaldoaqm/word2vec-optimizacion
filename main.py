@@ -24,12 +24,25 @@ from src.data          import load_amazon_spanish, preprocess_corpus
 from src.word2vec_model import Vocabulary, Word2Vec1Layer, Word2Vec2Layer
 from src.trainer        import train_word2vec
 from src.classifier     import build_document_matrix, train_classifier, evaluate
+from src.utils          import set_seed
 from src.visualization  import (
     plot_convergence_curves,
     plot_convergence_comparison,
     plot_tsne,
     print_results_table,
 )
+
+
+# ── Learning rate optimo POR optimizador ────────────────────
+# Comparar los tres optimizadores con el MISMO lr es injusto: 0.001
+# es el rango optimo de Adam/RMSProp pero deja a SGD estancado.
+# Cada metodo se entrena en su rango estable para una comparacion justa.
+# (La sensibilidad de SGD al lr se estudia por separado en exp1.py.)
+LR_BY_OPTIMIZER = {
+    "SGD":     0.1,
+    "RMSProp": 0.001,
+    "Adam":    0.001,
+}
 
 
 # ── Argumentos de línea de comandos ─────────────────────────
@@ -42,7 +55,7 @@ def parse_args():
     p.add_argument("--hidden_dim",  type=int,   default=64,    help="Dimensión capa oculta (solo 2 capas)")
     p.add_argument("--window",      type=int,   default=5,     help="Ventana de contexto")
     p.add_argument("--negatives",   type=int,   default=5,     help="Palabras negativas por par")
-    p.add_argument("--lr",          type=float, default=0.001, help="Learning rate")
+    p.add_argument("--lr",          type=float, default=None,  help="Learning rate global (si se omite, se usa el lr optimo por optimizador)")
     p.add_argument("--max_train",   type=int,   default=40_000,help="Máximo muestras train")
     p.add_argument("--device",      type=str,   default="cuda",help="cuda | cpu")
     p.add_argument("--skip_2layer", action="store_true",       help="Omitir experimento con 2 capas")
@@ -53,6 +66,7 @@ def parse_args():
 
 def main():
     args = parse_args()
+    set_seed(42)
     Path("results").mkdir(exist_ok=True)
 
     # ── 1. Datos ─────────────────────────────────────────────
@@ -85,17 +99,19 @@ def main():
     optimizers = ["SGD", "RMSProp", "Adam"]
 
     for opt in optimizers:
+        lr_opt = args.lr if args.lr is not None else LR_BY_OPTIMIZER[opt]
         model = Word2Vec1Layer(vocab.vocab_size, embed_dim=args.embed_dim)
         res   = train_word2vec(
             model, train_tokens, vocab,
             optimizer_name=opt,
-            learning_rate=args.lr,
+            learning_rate=lr_opt,
             epochs=args.epochs,
             batch_size=args.batch_size,
             window_size=args.window,
             num_negatives=args.negatives,
             device=args.device,
         )
+        res["lr"]         = lr_opt
         res["model"]      = model
         res["embeddings"] = model.get_embeddings()
         results_1layer[opt] = res
@@ -109,6 +125,7 @@ def main():
         print("═"*55)
 
         for opt in optimizers:
+            lr_opt = args.lr if args.lr is not None else LR_BY_OPTIMIZER[opt]
             model = Word2Vec2Layer(
                 vocab.vocab_size,
                 embed_dim=args.embed_dim,
@@ -117,13 +134,14 @@ def main():
             res = train_word2vec(
                 model, train_tokens, vocab,
                 optimizer_name=opt,
-                learning_rate=args.lr,
+                learning_rate=lr_opt,
                 epochs=args.epochs,
                 batch_size=args.batch_size,
                 window_size=args.window,
                 num_negatives=args.negatives,
                 device=args.device,
             )
+            res["lr"]         = lr_opt
             res["model"]      = model
             res["embeddings"] = model.get_embeddings()
             results_2layer[opt] = res
@@ -139,7 +157,6 @@ def main():
         for opt, res in results_dict.items():
             emb = res["embeddings"]
             X_train = build_document_matrix(train_tokens, vocab, emb)
-            X_val   = build_document_matrix(val_tokens,   vocab, emb)
             X_test  = build_document_matrix(test_tokens,  vocab, emb)
 
             clf     = train_classifier(X_train, train_labels)
@@ -149,6 +166,7 @@ def main():
             all_clf_results.append({
                 "arquitectura": arch_name,
                 "optimizador":  opt,
+                "lr":           res.get("lr"),
                 "accuracy":     metrics["accuracy"],
                 "f1_macro":     metrics["f1_macro"],
                 "tiempo_total": res["total_time"],

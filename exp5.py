@@ -17,6 +17,7 @@ from src.data import load_amazon_spanish, preprocess_corpus
 from src.word2vec_model import Vocabulary, Word2Vec1Layer
 from src.trainer import train_word2vec
 from src.classifier import build_document_matrix, train_classifier, evaluate
+from src.utils import set_seed
 
 RESULTS_DIR = Path("results")
 RESULTS_DIR.mkdir(exist_ok=True)
@@ -26,9 +27,13 @@ EPOCHS    = 5
 BATCH     = 512
 DEVICE    = "cuda"
 
-# Grid de busqueda
-LR_GRID  = [0.1, 0.01, 0.001]
-DIM_GRID = [50, 100, 150]
+# Grid de busqueda.
+# El rango de lr se EXTIENDE por debajo de 0.001 (hasta 1e-4) para que el
+# optimo no quede pegado al borde inferior de la rejilla: asi se puede
+# afirmar que el grid contiene el optimo en su interior y no en la frontera.
+# El rango de d incluye 200 por la misma razon (el optimo ronda d=150).
+LR_GRID  = [0.01, 0.003, 0.001, 0.0003, 0.0001]
+DIM_GRID = [50, 100, 150, 200]
 
 
 def run_config(lr, d, train_tokens, train_labels,
@@ -147,6 +152,7 @@ def plot_val_vs_test(best, test_f1):
 
 
 def main():
+    set_seed(42)
     print("Cargando datos...")
     (train_texts, train_labels,
      val_texts,   val_labels,

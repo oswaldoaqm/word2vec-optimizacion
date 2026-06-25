@@ -12,6 +12,7 @@ from src.data import load_amazon_spanish, preprocess_corpus
 from src.word2vec_model import Vocabulary, Word2Vec1Layer
 from src.trainer import train_word2vec
 from src.classifier import build_document_matrix, train_classifier, evaluate
+from src.utils import set_seed
 
 RESULTS_DIR = Path("results")
 RESULTS_DIR.mkdir(exist_ok=True)
@@ -24,16 +25,27 @@ EPOCHS    = 5
 
 # --- TF-IDF baseline ---
 
-def run_tfidf(train_texts, train_labels, test_texts, test_labels):
-    print("\n--- TF-IDF + Logistic Regression ---")
-    # Texto plano (sin tokenizar, TfidfVectorizer lo hace internamente)
+def run_tfidf(train_texts, train_labels, test_texts, test_labels,
+              ngram_range=(1, 2), max_features=50000):
+    """
+    TF-IDF + Regresion Logistica.
+
+    ngram_range controla si el baseline es unigrama (1,1) o uni+bigrama (1,2).
+    Reportar AMBOS hace la comparacion contra Word2Vec simetrica: Word2Vec
+    promedia embeddings de palabras sueltas (unigramas), por lo que el
+    baseline unigrama es el rival metodologicamente equivalente; el de
+    bigramas se incluye como cota superior de lo que captura una
+    representacion dispersa con informacion de orden local.
+    """
+    etiqueta = "unigrama (1,1)" if ngram_range == (1, 1) else "uni+bigrama (1,2)"
+    print(f"\n--- TF-IDF [{etiqueta}] + Logistic Regression ---")
     vec = TfidfVectorizer(
-        ngram_range=(1, 2),
+        ngram_range=ngram_range,
         min_df=2,
         max_df=0.95,
         sublinear_tf=True,
         norm="l2",
-        max_features=50000,
+        max_features=max_features,
     )
     X_train = vec.fit_transform(train_texts)
     X_test  = vec.transform(test_texts)
@@ -48,7 +60,8 @@ def run_tfidf(train_texts, train_labels, test_texts, test_labels):
     print(f"  Accuracy : {acc:.4f}")
     print(f"  F1-macro : {f1_macro:.4f}")
     print(f"  Features : {X_train.shape[1]:,}")
-    return {"accuracy": acc, "f1_macro": f1_macro, "n_features": X_train.shape[1]}
+    return {"accuracy": acc, "f1_macro": f1_macro,
+            "n_features": X_train.shape[1], "ngram_range": ngram_range}
 
 
 # --- Ablacion de dimension de embeddings ---
@@ -86,31 +99,33 @@ def run_dim_ablation(train_tokens, train_labels, test_tokens, test_labels, vocab
 
 # --- Figuras ---
 
-def plot_results(tfidf_res, dim_results, w2v_best_f1):
+def plot_results(tfidf_uni, tfidf_bi, dim_results, w2v_best_f1):
     fig, axes = plt.subplots(1, 2, figsize=(13, 5))
 
-    # Panel izquierdo: comparacion TF-IDF vs Word2Vec
+    # Panel izquierdo: comparacion TF-IDF (uni y bi) vs Word2Vec
     ax = axes[0]
-    modelos = ["TF-IDF\n+ LogReg", "Word2Vec\n+ LogReg\n(mejor)"]
-    f1s     = [tfidf_res["f1_macro"], w2v_best_f1]
-    colors  = ["#95A5A6", "#185FA5"]
-    bars    = ax.bar(modelos, f1s, color=colors, width=0.5, edgecolor="white")
+    modelos = ["TF-IDF\nunigrama", "TF-IDF\nuni+bigrama", "Word2Vec\n+ LogReg\n(mejor)"]
+    f1s     = [tfidf_uni["f1_macro"], tfidf_bi["f1_macro"], w2v_best_f1]
+    colors  = ["#BDC3C7", "#95A5A6", "#185FA5"]
+    bars    = ax.bar(modelos, f1s, color=colors, width=0.6, edgecolor="white")
     ax.set_ylim(0.5, 1.0)
     ax.set_ylabel("F1-macro")
-    ax.set_title("TF-IDF vs Word2Vec")
+    ax.set_title("TF-IDF (unigrama y bigrama) vs Word2Vec")
     ax.grid(True, alpha=0.3, linestyle=":", axis="y")
     for bar, val in zip(bars, f1s):
         ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.005,
-                f"{val:.4f}", ha="center", va="bottom", fontsize=11, fontweight="bold")
+                f"{val:.4f}", ha="center", va="bottom", fontsize=10, fontweight="bold")
 
     # Panel derecho: F1 vs dimension de embeddings
     ax2   = axes[1]
     dims  = [r["dim"]      for r in dim_results]
     f1s_d = [r["f1_macro"] for r in dim_results]
     ax2.plot(dims, f1s_d, color="#185FA5", linewidth=2.5,
-             marker="o", markersize=8)
-    ax2.axhline(y=tfidf_res["f1_macro"], color="#95A5A6",
-                linewidth=1.5, linestyle="--", label="TF-IDF baseline")
+             marker="o", markersize=8, label="Word2Vec")
+    ax2.axhline(y=tfidf_uni["f1_macro"], color="#BDC3C7",
+                linewidth=1.5, linestyle="--", label="TF-IDF unigrama")
+    ax2.axhline(y=tfidf_bi["f1_macro"], color="#95A5A6",
+                linewidth=1.5, linestyle="--", label="TF-IDF uni+bigrama")
     ax2.set_title("F1-macro vs Dimension de embeddings")
     ax2.set_xlabel("Dimension (d)")
     ax2.set_ylabel("F1-macro")
@@ -139,6 +154,7 @@ def plot_results(tfidf_res, dim_results, w2v_best_f1):
 
 
 def main():
+    set_seed(42)
     print("Cargando datos...")
     (train_texts, train_labels, _, _,
      test_texts,  test_labels) = load_amazon_spanish(max_train=MAX_TRAIN)
@@ -147,25 +163,29 @@ def main():
     test_tokens  = preprocess_corpus(test_texts)
     vocab = Vocabulary(min_count=5).build(train_tokens)
 
-    # TF-IDF
-    tfidf_res = run_tfidf(train_texts, train_labels, test_texts, test_labels)
+    # TF-IDF: dos variantes para una comparacion simetrica con Word2Vec
+    tfidf_uni = run_tfidf(train_texts, train_labels, test_texts, test_labels,
+                          ngram_range=(1, 1))
+    tfidf_bi  = run_tfidf(train_texts, train_labels, test_texts, test_labels,
+                          ngram_range=(1, 2))
 
     # Ablacion de dimension
     dim_results = run_dim_ablation(
         train_tokens, train_labels, test_tokens, test_labels, vocab
     )
 
-    # F1 del mejor Word2Vec del experimento principal (RMSProp, 1 capa)
-    w2v_best_f1 = 0.8942
+    # F1 del mejor Word2Vec: se toma del propio barrido de dimension (no hardcode)
+    w2v_best_f1 = max(r["f1_macro"] for r in dim_results)
 
     # Figura
     print("\nGenerando figura...")
-    plot_results(tfidf_res, dim_results, w2v_best_f1)
+    plot_results(tfidf_uni, tfidf_bi, dim_results, w2v_best_f1)
 
     # Resumen
     print("\nResumen TF-IDF:")
-    print(f"  F1-macro : {tfidf_res['f1_macro']:.4f}")
-    print(f"  Accuracy : {tfidf_res['accuracy']:.4f}")
+    print(f"  unigrama      F1={tfidf_uni['f1_macro']:.4f}  acc={tfidf_uni['accuracy']:.4f}  feats={tfidf_uni['n_features']:,}")
+    print(f"  uni+bigrama   F1={tfidf_bi['f1_macro']:.4f}  acc={tfidf_bi['accuracy']:.4f}  feats={tfidf_bi['n_features']:,}")
+    print(f"  Word2Vec best F1={w2v_best_f1:.4f}")
     print("\nResumen ablacion de dimension:")
     print(f"  {'d':<6} {'F1-macro':>9} {'Loss final':>11}")
     print("  " + "-"*28)
@@ -173,7 +193,12 @@ def main():
         print(f"  {r['dim']:<6} {r['f1_macro']:>9.4f} {r['loss_final']:>11.4f}")
 
     with open(RESULTS_DIR / "exp3_resultados.pkl", "wb") as f:
-        pickle.dump({"tfidf": tfidf_res, "dim_ablation": dim_results}, f)
+        pickle.dump({
+            "tfidf_unigram": tfidf_uni,
+            "tfidf_bigram":  tfidf_bi,
+            "w2v_best_f1":   w2v_best_f1,
+            "dim_ablation":  dim_results,
+        }, f)
 
     print("\nExperimento 3 completo.")
 

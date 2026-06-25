@@ -17,6 +17,13 @@ from torch.utils.data import DataLoader
 from src.skipgram_data import SkipGramDataset, collate_skipgram
 
 
+# SGD con momentum (beta=0.9): es el baseline de descenso del gradiente
+# del estudio. El momentum acumula los gradientes —diminutos al inicio por
+# la inicializacion de W_out en ceros— y permite escapar de la meseta de
+# arranque; sin el, SGD puro queda congelado incluso con lr=0.1.
+# En el informe corresponde a la Ec. 7 con termino de momentum
+# (v_{t+1} = mu*v_t + grad ; theta_{t+1} = theta_t - lr*v_{t+1}).
+# RMSProp y Adam mantienen sus hiperparametros estandar.
 OPTIMIZERS = {
     "SGD":      lambda params, lr: torch.optim.SGD(params, lr=lr, momentum=0.9),
     "RMSProp":  lambda params, lr: torch.optim.RMSprop(params, lr=lr, alpha=0.99),
