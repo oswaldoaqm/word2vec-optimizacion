@@ -1,13 +1,3 @@
-# src/utils.py
-# ============================================================
-#  Utilidades de reproducibilidad.
-#
-#  set_seed() fija todas las fuentes de aleatoriedad usadas en
-#  el proyecto: Python random, numpy, y torch (CPU y CUDA).
-#  Llamar al inicio de cada script garantiza que las corridas
-#  sean reproducibles entre ejecuciones.
-# ============================================================
-
 import os
 import random
 

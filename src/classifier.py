@@ -1,11 +1,3 @@
-# src/classifier.py
-# ============================================================
-#  Clasificador de sentimientos sobre embeddings Word2Vec
-#
-#  Estrategia: vector de documento = promedio de embeddings
-#  de las palabras que lo componen. Luego Regresión Logística.
-# ============================================================
-
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (

@@ -1,12 +1,3 @@
-# src/skipgram_data.py
-# ============================================================
-#  Generación de pares Skip-gram y muestreo negativo
-#
-#  Dado un corpus tokenizado y un vocabulario, genera batches
-#  de (palabra_central, palabra_contexto, palabras_negativas)
-#  para entrenar Word2Vec con Negative Sampling.
-# ============================================================
-
 import numpy as np
 import torch
 from torch.utils.data import IterableDataset

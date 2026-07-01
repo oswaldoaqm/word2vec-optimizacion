@@ -1,36 +1,3 @@
-# gradcheck.py
-# ============================================================
-#  Verificacion del gradiente analitico de Negative Sampling
-#
-#  Objetivo (curso de Optimizacion): comprobar que la formula
-#  derivada a mano en el informe (Ec. 4) es CORRECTA, contrastandola
-#  contra:
-#    (A) la diferenciacion automatica de PyTorch (autograd), y
-#    (B) un gradiente numerico por diferencias finitas
-#        (torch.autograd.gradcheck, doble precision).
-#
-#  La perdida de Negative Sampling para un par positivo (wI, wO)
-#  con K negativos {wk} es (Ec. 3 del informe):
-#
-#     L = -log sigma(v_wO . u_wI)
-#           - sum_k log sigma(-v_wk . u_wI)
-#
-#  El gradiente respecto al embedding de entrada u_wI es (Ec. 4):
-#
-#     dL/du = (sigma(v_wO . u) - 1) v_wO
-#               + sum_k sigma(v_wk . u) v_wk
-#
-#  y, analogamente, respecto a los embeddings de salida:
-#
-#     dL/dv_wO = (sigma(v_wO . u) - 1) u
-#     dL/dv_wk =  sigma(v_wk . u)      u
-#
-#  Este script NO necesita el dataset ni GPU: corre en segundos
-#  sobre datos sinteticos en CPU.
-#
-#  Uso:  python gradcheck.py
-# ============================================================
-
 import numpy as np
 import torch
 

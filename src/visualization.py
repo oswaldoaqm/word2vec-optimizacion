@@ -1,12 +1,3 @@
-# src/visualization.py
-# ============================================================
-#  Visualizaciones del proyecto
-#
-#  1. Curvas de convergencia (pérdida por epoch, por optimizador)
-#  2. Visualización t-SNE de embeddings
-#  3. Tabla comparativa de resultados
-# ============================================================
-
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
@@ -15,7 +6,6 @@ from pathlib import Path
 RESULTS_DIR = Path("results")
 RESULTS_DIR.mkdir(exist_ok=True)
 
-# Paleta de colores consistente para los tres optimizadores
 COLORS = {
     "SGD":     "#E24B4A",   # rojo
     "RMSProp": "#BA7517",   # ámbar

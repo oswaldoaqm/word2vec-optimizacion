@@ -1,19 +1,3 @@
-# main.py
-# ============================================================
-#  Experimento principal
-#
-#  Ejecuta el pipeline completo:
-#    1. Carga y preprocesa el dataset
-#    2. Construye el vocabulario
-#    3. Entrena Word2Vec (1 y 2 capas) con SGD, RMSProp, Adam
-#    4. Clasifica sentimientos con Regresión Logística
-#    5. Genera curvas de convergencia, t-SNE y tabla de resultados
-#
-#  Uso:
-#    python main.py
-#    python main.py --epochs 10 --batch_size 1024
-# ============================================================
-
 import argparse
 import pickle
 from pathlib import Path
@@ -33,11 +17,6 @@ from src.visualization  import (
 )
 
 
-# ── Learning rate optimo POR optimizador ────────────────────
-# Comparar los tres optimizadores con el MISMO lr es injusto: 0.001
-# es el rango optimo de Adam/RMSProp pero deja a SGD estancado.
-# Cada metodo se entrena en su rango estable para una comparacion justa.
-# (La sensibilidad de SGD al lr se estudia por separado en exp1.py.)
 LR_BY_OPTIMIZER = {
     "SGD":     0.1,
     "RMSProp": 0.001,

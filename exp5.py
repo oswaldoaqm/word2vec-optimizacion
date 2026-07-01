@@ -1,11 +1,3 @@
-# exp5.py
-# Grid search de hiperparametros (lr x d) con Adam.
-# REGLA METODOLOGICA ESTRICTA:
-#   - Seleccion de hiperparametros: SOLO sobre conjunto de VALIDACION
-#   - Evaluacion final: SOLO sobre TEST, UNA SOLA VEZ, con el ganador
-#   - El test set NO se toca durante la busqueda
-# Esto evita data leakage y garantiza metricas sin sesgo.
-
 import pickle
 import matplotlib
 matplotlib.use('Agg')

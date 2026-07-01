@@ -1,13 +1,3 @@
-# src/word2vec_model.py
-# ============================================================
-#  Word2Vec implementado en PyTorch
-#  Arquitectura Skip-gram con Negative Sampling
-#
-#  Dos variantes:
-#    Word2Vec1Layer  —  arquitectura original (1 capa oculta)
-#    Word2Vec2Layer  —  extensión con 2 capas ocultas
-# ============================================================
-
 import torch
 import torch.nn as nn
 import numpy as np
